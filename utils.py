@@ -1,6 +1,7 @@
 import math
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from sklearn import linear_model, datasets
 import numpy as np
 import cv2
 
@@ -50,7 +51,79 @@ def region_of_interest(img, vertices):
     return masked_image
 
 
-def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
+def draw_lines_ori(img, lines, color=[255, 0, 0], thickness=2):
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+
+def draw_lines_ransac(img, lines, color=[255, 0, 0], thickness=10):
+    img2 = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+
+    left_x = []
+    left_y = []
+    right_x = []
+    right_y = []
+
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            # dis = math.sqrt((y2-y1)*(y2-y1) + (x2-x1)*(x2-x1))
+            # if dis < 10:
+            #     continue
+            slope = math.atan2((y2 - y1), (x2 - x1)) * 57.3
+            # if (abs(abs(slope) - 90) < 5):
+            #     print('skip %f' % slope)
+            #     continue
+            # if (abs(slope) < 5):
+            #     print('skip %f' % slope)
+            #     continue
+            if slope > 0:
+                # right
+                right_x.append([x1]),right_x.append([x2])
+                right_y.append(y1),right_y.append(y2)
+            elif slope < 0:
+                # left
+                left_x.append([x1]), left_x.append([x2])
+                left_y.append(y1), left_y.append(y2)
+    # Robustly fit linear model with RANSAC algorithm
+    model_ransac = linear_model.RANSACRegressor(linear_model.LinearRegression())
+    model_ransac.fit(left_x, left_y)
+    left_inlier_mask = model_ransac.inlier_mask_
+    left_outlier_mask = np.logical_not(left_inlier_mask)
+    # find left far, near points in the inliner points
+    left_far_near_x = np.array([-999999, 999999])
+    for i in range(left_inlier_mask.size):
+        if np.equal(left_inlier_mask[i],True):
+            # far point x
+            if left_x[i][0] > left_far_near_x[0]:
+                left_far_near_x[0] = left_x[i][0]
+            # near point x
+            if left_x[i][0] < left_far_near_x[1]:
+                left_far_near_x[1] = left_x[i][0]
+    left_far_near_y = model_ransac.predict(left_far_near_x[:, np.newaxis])
+    left_far_near_y = left_far_near_y.astype(np.int64)
+
+    model_ransac2 = linear_model.RANSACRegressor(linear_model.LinearRegression())
+    model_ransac2.fit(right_x, right_y)
+    right_inlier_mask = model_ransac2.inlier_mask_
+    right_outlier_mask = np.logical_not(right_inlier_mask)
+    right_far_near_x = np.array([999999, -999999])
+    for i in range(right_inlier_mask.size):
+        if np.equal(right_inlier_mask[i],True):
+            if right_x[i][0] > right_far_near_x[1]:
+                right_far_near_x[1] = right_x[i][0]
+            if right_x[i][0] < right_far_near_x[0]:
+                right_far_near_x[0] = right_x[i][0]
+    right_far_near_y = model_ransac2.predict(right_far_near_x[:, np.newaxis])
+    right_far_near_y = right_far_near_y.astype(np.int64)
+
+    cv2.line(img2, (left_far_near_x[0], left_far_near_y[0]),
+             (left_far_near_x[1], left_far_near_y[1]), color, thickness)
+    cv2.line(img2, (right_far_near_x[0], right_far_near_y[0]),
+             (right_far_near_x[1], right_far_near_y[1]), color, thickness)
+
+    cv2.addWeighted(img2, 0.6, img, 0.4, 0., img)
+
+def draw_lines(img, lines, color=[255, 0, 0], thickness=10):
     """
     NOTE: this is the function you might want to use as a starting point once you want to
     average/extrapolate the line segments you detect to map out the full
@@ -67,9 +140,78 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     If you want to make the lines semi-transparent, think about combining
     this function with the weighted_img() function below
     """
+    img2 = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+    print('slopes:')
+    left_line_far = [9999,9999]
+    left_line_near = [-9999,-9999]
+    right_line_far = [9999,9999]
+    right_line_near = [-9999,-9999]
+    left_line_far_line = []
+    left_line_near_line = []
+    right_line_far_line = []
+    right_line_near_line = []
     for line in lines:
         for x1, y1, x2, y2 in line:
-            cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+            # dis = math.sqrt((y2-y1)*(y2-y1) + (x2-x1)*(x2-x1))
+            # if dis < 10:
+            #     continue
+            slope = math.atan2((y2 - y1), (x2 - x1)) * 57.3
+            # if (abs(abs(slope) - 90) < 5):
+            #     print('skip %f' % slope)
+            #     continue
+            # if (abs(slope) < 5):
+            #     print('skip %f' % slope)
+            #     continue
+            if slope > 0:
+                # left
+                if y1 < left_line_far[1]:
+                    left_line_far = [x1,y1]
+                    left_line_far_line = line[0]
+                    left_line_far_line_slope = slope
+                if y1 > left_line_near[1]:
+                    left_line_near = [x1, y1]
+                    left_line_near_line = line[0]
+                    left_line_near_line_slope = slope
+                if y2 < left_line_far[1]:
+                    left_line_far = [x2,y2]
+                    left_line_far_line = line[0]
+                    left_line_far_line_slope = slope
+                if y2 > left_line_near[1]:
+                    left_line_near = [x2, y2]
+                    left_line_near_line = line[0]
+                    left_line_near_line_slope = slope
+            elif slope < 0:
+                # right
+                if y1 < right_line_far[1]:
+                    right_line_far = [x1,y1]
+                    right_line_far_line = line[0]
+                    right_line_far_line_slope = slope
+                if y1 > right_line_near[1]:
+                    right_line_near = [x1, y1]
+                    right_line_near_line = line[0]
+                    right_line_near_line_slope = slope
+                if y2 < right_line_far[1]:
+                    right_line_far = [x2,y2]
+                    right_line_far_line = line[0]
+                    right_line_far_line_slope = slope
+                if y2 > right_line_near[1]:
+                    right_line_near = [x2, y2]
+                    right_line_near_line = line[0]
+                    right_line_near_line_slope = slope
+            print(slope)
+    cv2.line(img2, (left_line_far[0], left_line_far[1]), (left_line_near[0], left_line_near[1]), color, thickness)
+    cv2.line(img2, (right_line_far[0], right_line_far[1]), (right_line_near[0], right_line_near[1]), color, thickness)
+    # draw lines
+    cv2.line(img2, (left_line_near_line[0], left_line_near_line[1]), (left_line_near_line[2], left_line_near_line[3]), [0, 255, 0], 5)
+    print('left near slop: %f' % left_line_near_line_slope)
+    cv2.line(img2, (left_line_far_line[0], left_line_far_line[1]), (left_line_far_line[2], left_line_far_line[3]), [0,255,0], 5)
+    print('left far slop: %f' % left_line_far_line_slope)
+    cv2.line(img2, (right_line_near_line[0], right_line_near_line[1]), (right_line_near_line[2], right_line_near_line[3]), [0, 0, 255], 8)
+    print('right near slop: %f' % right_line_near_line_slope)
+    cv2.line(img2, (right_line_far_line[0], right_line_far_line[1]), (right_line_far_line[2], right_line_far_line[3]), [0,0,255], 8)
+    print('right far slop: %f' % right_line_far_line_slope)
+
+    cv2.addWeighted(img2, 0.6, img, 0.4, 0.,img)
 
 
 def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
@@ -81,7 +223,9 @@ def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
     lines = cv2.HoughLinesP(img, rho, theta, threshold, np.array([]), minLineLength=min_line_len,
                             maxLineGap=max_line_gap)
     line_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
-    draw_lines(line_img, lines)
+    # draw_lines(line_img, lines)
+    # draw_lines_ori(line_img, lines)
+    draw_lines_ransac(line_img, lines)
     return line_img
 
 
