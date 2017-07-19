@@ -50,9 +50,14 @@ As ransac can robustly fit the line, even the slope threshold is not so acurate.
 
 1. the ROI is hardcode. So when run with challenge video, neeed redesign ROI.
 
-2. opencv canny(same parameters) doest not work well with images under different sun light
+2. opencv canny(same parameters) doest not work well with images under different sun light.
+The ouput of chanllenge video has a lot of errors.
+
+3. design performance matrix and need veridate with ground truth data
 
 
 ### 3. Suggest possible improvements to your pipeline
 
 1. use deep learning to find lane marker
+
+2. test with dataset ,which has ground truth
