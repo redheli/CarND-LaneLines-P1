@@ -24,15 +24,6 @@ whiteCarLaneSwitch
 
 <img src="test_images_output/whiteCarLaneSwitch.jpg" width="480"  />
 
-[link text](https://github.com/redheli/CarND-LaneLines-P1/blob/master/test_videos_output/solidWhiteRight.mp4 "link title")
-
-<script src="http://vjs.zencdn.net/4.0/video.js"></script>
-
-<video id="pelican-installation" class="video-js vjs-default-skin" controls
-preload="auto" width="683" height="384" 
-data-setup="{}">
-<source src="./test_videos_output/solidWhiteRight.mp4" type='video/mp4'>
-</video>
 
 # **Run P1.ipynb**
 I use ipywidgets's interact widget to tune the parameters, so install ipywidgets first
