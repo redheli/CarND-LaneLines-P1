@@ -64,7 +64,7 @@ for image_name in images:
     rho = 0.5 # distance resolution in pixels of the Hough grid
     theta = np.pi/180 # angular resolution in radians of the Hough grid
     threshold = 1     # minimum number of votes (intersections in Hough grid cell)
-    min_line_length = 20 #minimum number of pixels making up a line
+    min_line_length = 10 #minimum number of pixels making up a line
     max_line_gap = 10    # maximum gap in pixels between connectable line segments
     line_image = np.copy(image)*0 # creating a blank to draw lines on
 
