@@ -3,12 +3,19 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 import os
-os.listdir("test_images/")
+import sys
+print(os.getcwd())
+p = os.getcwd()
+sys.path.append('/home/max/avmap/udacity/CarND-LaneLines-P1')
+import utils
+images = os.listdir("test_images/")
 
 # Read in and grayscale the image
-image_name = 'solidYellowCurve2.jpg'
+# image_name = 'solidYellowCurve2.jpg'
+image_name = 'solidWhiteCurve.jpg'
 image = mpimg.imread('./test_images/'+image_name)
-gray = cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
+# gray = cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
+gray = utils.grayscale(image)
 
 # Define a kernel size and apply Gaussian smoothing
 kernel_size = 5
@@ -21,7 +28,7 @@ edges = cv2.Canny(blur_gray, low_threshold, high_threshold)
 plt.subplot(221),plt.imshow(image,cmap = 'gray')
 plt.title('Original Image \n{}'.format(image_name) )
 plt.subplot(222),plt.imshow(edges,cmap = 'gray')
-
+plt.title('Canny Edges \n{}'.format(image_name) )
 
 # Next we'll create a masked edges image using cv2.fillPoly()
 mask = np.zeros_like(edges)
@@ -29,9 +36,9 @@ ignore_mask_color = 255
 
 # This time we are defining a four sided polygon to mask
 imshape = image.shape
-left_bottom = [50, imshape[0]]
-left_top = [430,300]
-right_top = [510,300]
+left_bottom = [100, imshape[0]]
+left_top = [440,330]
+right_top = [550,330]
 right_bottom = [960-50,imshape[0]]
 #vertices = np.array([[(0,imshape[0]),(0, 0), (imshape[1], 0), (imshape[1],imshape[0])]], dtype=np.int32)
 vertices = np.array([[(left_bottom[0], left_bottom[1] ),
@@ -61,9 +68,10 @@ for line in lines:
     for x1,y1,x2,y2 in line:
         cv2.line(line_image,(x1,y1),(x2,y2),(255,0,0),10)
 
-plt.subplot(223), plt.imshow(line_image,cmap = 'gray')
+plt.subplot(224), plt.imshow(line_image,cmap = 'gray')
+plt.title('Line Image')
 plt.imshow(line_image)
-plt.title('Line Image \n{}'.format(image_name) )
+
 
 # Create a "color" binary image to combine with line image
 color_edges = np.dstack((edges, edges, edges))
@@ -73,8 +81,8 @@ lines_edges = cv2.addWeighted(color_edges, 0.8, line_image, 1, 0)
 
 x = [left_bottom[0], left_top[0], right_top[0], right_bottom[0]]
 y = [left_bottom[1], left_top[1], right_top[1], right_bottom[1]]
-plt.subplot(224),plt.plot(x, y, 'b--', lw=4)
+plt.subplot(223),plt.plot(x, y, 'b--', lw=4)
 
 plt.imshow(lines_edges)
-
+plt.title('Final Lines')
 plt.show()
