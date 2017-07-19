@@ -101,8 +101,8 @@ for image_name in images:
 
     final_image = utils.weighted_img(line_image, image, alpha, beta, remda)
 
-    x = [left_bottom[0], left_top[0], right_top[0], right_bottom[0]]
-    y = [left_bottom[1], left_top[1], right_top[1], right_bottom[1]]
+    x = [left_bottom[0], left_top[0], right_top[0], right_bottom[0], left_bottom[0]]
+    y = [left_bottom[1], left_top[1], right_top[1], right_bottom[1], left_bottom[1]]
     plt.subplot(223),plt.plot(x, y, 'b--', lw=4)
 
     plt.imshow(final_image)
